@@ -4,22 +4,31 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 
-BASE_DIR = Path(__file__).parent  
-file_name = "FSPT24_Endurance_IVAN_JESSIE_2024 Car_Generic testing_a_2797.csv" #enter file to analyse here
+
+#PARAMETERS
+
+#Enter File below to analyse
+file_name = "FSPT24_Endurance_IVAN_JESSIE_2024 Car_Generic testing_a_2797.csv" 
+#visualise the acceleration 
+VISUALISE = False
+#amplitude bands for cycle counting
+AMPLITUDE_BANDS = [0.1, 0.2, 0.3, 0.4, 0.5]  # in g
+#toggle smoothing of IMU data (works by taking a rolling average)
+APPLY_SMOOTHING = False
+#optionally output results to a CSV file
+OUPUT_CSV = True
+
+#file handling
+BASE_DIR = Path(__file__).parent
 data_file = BASE_DIR.parent / "data" / file_name
 
 #load IMU data from after the metadata
 df = pd.read_csv(data_file, skiprows=14)
 
-#amplitude bands for cycle counting
-AMPLITUDE_BANDS = [0.1, 0.2, 0.3, 0.4, 0.5]  # in g
 
 #change IMU values to floats
 for c in ['InlineAcc', 'LateralAcc', 'VerticalAcc']:
     df[c] = pd.to_numeric(df[c], errors='coerce') #
-
-#toggle smoothing of IMU data
-APPLY_SMOOTHING = False
 
 # clean noisy data by taking a rolling average
 if APPLY_SMOOTHING:
@@ -83,8 +92,6 @@ for axis in ['InlineAcc','LateralAcc','VerticalAcc','Mag']:
 
 #visualise acceleration
 
-VISUALISE = False
-
 if VISUALISE:
 
     for axis in ['InlineAcc', 'LateralAcc', 'VerticalAcc']:
@@ -103,7 +110,6 @@ df_results = pd.DataFrame(results)
 print(df_results)
 
 #optionally output to a csv file
-OUPUT_CSV = True
 if OUPUT_CSV:
     df_results.to_csv("results.csv", index=False)
 
