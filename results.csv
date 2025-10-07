@@ -1,0 +1,5 @@
+Signal,Mean_g,Total_cycles,Avg_amp_g,RMS_g,Cycles_>=0.1g,Cycles_>=0.2g,Cycles_>=0.3g,Cycles_>=0.4g,Cycles_>=0.5g
+InlineAcc,0.1,4534,0.3,0.8,2218,1456,1056,812,647
+LateralAcc,0.1,4305,0.1,0.3,945,604,412,300,208
+VerticalAcc,-1.0,7121,0.1,1.0,2879,892,243,51,17
+Mag,1.3,6566,0.2,1.3,3317,1794,1013,585,329
