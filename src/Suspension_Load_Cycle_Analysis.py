@@ -4,13 +4,12 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
 #PARAMETERS
 
 #Enter File below to analyse
 file_name = "FSPT24_Endurance_IVAN_JESSIE_2024 Car_Generic testing_a_2797.csv" 
 #visualise the acceleration 
-VISUALISE = False
+VISUALISE = True
 #amplitude bands for cycle counting
 AMPLITUDE_BANDS = [0.1, 0.2, 0.3, 0.4, 0.5]  # in g
 #toggle smoothing of IMU data (works by taking a rolling average)
@@ -53,9 +52,14 @@ def find_peak_trough(acc):
 def cycle_stats_from_signal(acc):
     acc = np.asarray(acc)
     if acc.size == 0: 
-        return {'mean': np.nan, 'total_cycles':0, 'avg_amplitude':np.nan, 'rms': np.nan, 'band_counts': {band: 0 for band in AMPLITUDE_BANDS}}
+        return {'mean': np.nan,
+                 'total_cycles':0, 
+                 'avg_amplitude':np.nan, 
+                 'rms': np.nan, 
+                 'band_counts': {band: 0 for band in AMPLITUDE_BANDS}}
     mean_acc = np.mean(acc)
     rms = np.sqrt(np.mean(acc**2))
+    
     peak_trough_idx, max_idx, min_idx = find_peak_trough(acc)
     # number of cycles roughly equal number of peak-trough pairs
     # produce alternating peaks and troughs, then amplitude = abs(diff between consecutive extrema)
@@ -89,7 +93,6 @@ for axis in ['InlineAcc','LateralAcc','VerticalAcc','Mag']:
         result[f'Cycles_>={band}g'] = stats['band_counts'][band]
     results.append(result)
 
-
 #visualise acceleration
 
 if VISUALISE:
@@ -101,7 +104,8 @@ if VISUALISE:
         plt.axhline(stats['mean'], color='black', linestyle='--', label='Mean')
         plt.axhline(stats['mean'] + stats['avg_amplitude'], color='red', linestyle=':', label='+ Avg Amplitude')
         plt.axhline(stats['mean'] - stats['avg_amplitude'], color='blue', linestyle=':', label='- Avg Amplitude')
-        plt.title(f'{axis} Acceleration with Mean ± Avg Amplitude')
+        plt.axhline(stats['rms'], color='#FF8C00', linestyle=':', label='Root Mean Square')
+        plt.title(f'{axis}')
         plt.legend()
         plt.show()
 
@@ -112,10 +116,3 @@ print(df_results)
 #optionally output to a csv file
 if OUPUT_CSV:
     df_results.to_csv("results.csv", index=False)
-
-
-
-
-
-
-
