@@ -29,7 +29,7 @@ if not DATA_DIR.exists():
 data_file = DATA_DIR / file_name
 
 # Ensure output directory exists
-OUTPUT_DIR = Path(__file__).parent / "output"
+OUTPUT_DIR = BASE_DIR.parent / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 #load IMU data from after the metadata
