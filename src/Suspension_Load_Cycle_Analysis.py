@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 #Enter File below to analyse
 file_name = "FSPT24_Endurance_IVAN_JESSIE_2024 Car_Generic testing_a_2797.csv" 
 #visualise the acceleration 
-VISUALISE = True
+VISUALISE = False
 #amplitude bands for cycle counting
 AMPLITUDE_BANDS = [0.1, 0.2, 0.3, 0.4, 0.5]  # in g
 #toggle smoothing of IMU data (works by taking a rolling average)
@@ -56,24 +56,39 @@ def cycle_stats_from_signal(acc):
                  'total_cycles':0, 
                  'avg_amplitude':np.nan, 
                  'rms': np.nan, 
+                 'pos_rms': 0.0,
+                 'neg_rms': 0.0,
                  'band_counts': {band: 0 for band in AMPLITUDE_BANDS}}
     mean_acc = np.mean(acc)
     rms = np.sqrt(np.mean(acc**2))
+    positive_values = acc[acc > 0]
+    negative_values = acc[acc < 0]
+
+    if positive_values.size > 0:
+        pos_rms = np.sqrt(np.mean(positive_values**2))
+    else:
+        pos_rms = 0.0
+
+    if negative_values.size > 0:
+        neg_rms = np.sqrt(np.mean(negative_values**2))
+    else:
+        neg_rms = 0.0
     
     peak_trough_idx, max_idx, min_idx = find_peak_trough(acc)
     # number of cycles roughly equal number of peak-trough pairs
     # produce alternating peaks and troughs, then amplitude = abs(diff between consecutive extrema)
     if peak_trough_idx.size < 2:
-        return {'mean': mean_acc, 'total_cycles':0, 'avg_amplitude':0.0, 'rms': rms, 'band_counts': {band: 0 for band in AMPLITUDE_BANDS}}
+        return {'mean': mean_acc, 'total_cycles':0, 'avg_amplitude':0.0, 'rms': rms, 'pos_rms': pos_rms, 'neg_rms': neg_rms, 'band_counts': {band: 0 for band in AMPLITUDE_BANDS}}
     ext_vals = acc[peak_trough_idx]
-    amplitudes = np.abs(np.diff(ext_vals))  # peak-to-trough pairs
+    amplitudes = np.diff(ext_vals)  # keep sign of amplitude changes
     total_cycles = amplitudes.size
-    avg_amp = amplitudes.mean() if total_cycles > 0 else 0.0
+    avg_amp = np.mean(np.abs(amplitudes)) if total_cycles > 0 else 0.0
     # Count cycles in each amplitude band
     band_counts = {}
     for band in AMPLITUDE_BANDS:
-        band_counts[band] = np.sum(amplitudes >= band)
-    return {'mean': mean_acc, 'total_cycles': total_cycles, 'avg_amplitude': avg_amp, 'rms': rms, 'band_counts': band_counts}
+        band_counts[f'+>={band}g'] = np.sum(amplitudes >= band)
+        band_counts[f'-<={-band}g'] = np.sum(amplitudes <= -band)
+    return {'mean': mean_acc, 'total_cycles': total_cycles, 'avg_amplitude': avg_amp, 'rms': rms, 'pos_rms': pos_rms, 'neg_rms': neg_rms, 'band_counts': band_counts}
 
 #OUTPUT
 
@@ -85,12 +100,15 @@ results = []
 for axis in ['InlineAcc','LateralAcc','VerticalAcc','Mag']:
     stats = cycle_stats_from_signal(df[axis].dropna().values)
     result = {'Signal': axis, 
-              'Mean_g': f"{stats['mean']:.1f}", 
+            #   'Mean_g': f"{stats['mean']:.1f}", 
               'Total_cycles': stats['total_cycles'], 
-              'Avg_amp_g': f"{stats['avg_amplitude']:.1f}", 
-              'RMS_g': f"{stats['rms']:.1f}"}
+            #   'Avg_amp_g': f"{stats['avg_amplitude']:.1f}", 
+            #   'RMS_g': f"{stats['rms']:.1f}",
+              'RMS_Pos_g': f"{stats['pos_rms']:.1f}",
+              'RMS_Neg_g': f"{stats['neg_rms']:.1f}"}
     for band in AMPLITUDE_BANDS:
-        result[f'Cycles_>={band}g'] = stats['band_counts'][band]
+        result[f'Cycles_>={band}g_pos'] = stats['band_counts'][f'+>={band}g']
+        result[f'Cycles_<={-band}g_neg'] = stats['band_counts'][f'-<={-band}g']
     results.append(result)
 
 #visualise acceleration
@@ -105,6 +123,8 @@ if VISUALISE:
         plt.axhline(stats['mean'] + stats['avg_amplitude'], color='red', linestyle=':', label='+ Avg Amplitude')
         plt.axhline(stats['mean'] - stats['avg_amplitude'], color='blue', linestyle=':', label='- Avg Amplitude')
         plt.axhline(stats['rms'], color='#FF8C00', linestyle=':', label='Root Mean Square')
+        plt.axhline(stats['pos_rms'], color='green', linestyle=':', label='+ RMS')
+        plt.axhline(-stats['neg_rms'], color='purple', linestyle=':', label='- RMS')
         plt.title(f'{axis}')
         plt.legend()
         plt.show()
