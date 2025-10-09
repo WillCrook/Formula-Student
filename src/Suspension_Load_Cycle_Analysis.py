@@ -8,12 +8,16 @@ import matplotlib.pyplot as plt
 
 #Enter File below to analyse
 file_name = "FSPT24_Endurance_IVAN_JESSIE_2024 Car_Generic testing_a_2797.csv" 
+
 #visualise the acceleration 
 VISUALISE = True
+
 #amplitude bands for cycle counting
 AMPLITUDE_BANDS = [0.1, 0.2, 0.3, 0.4, 0.5, 1.0]  # in g
+
 #toggle smoothing of IMU data (works by taking a rolling average)
 APPLY_SMOOTHING = False
+
 #optionally output results to a CSV file
 OUPUT_CSV = True
 
@@ -21,11 +25,13 @@ OUPUT_CSV = True
 #file handling
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR.parent / "data"
+
 if not DATA_DIR.exists():
     print("Data folder not found. Creating one now at:", DATA_DIR)
     DATA_DIR.mkdir(exist_ok=True)
     print("Please add your data files to this folder and rerun the script.")
     exit()
+
 data_file = DATA_DIR / file_name
 
 # Ensure output directory exists
@@ -38,15 +44,13 @@ df = pd.read_csv(data_file, skiprows=14)
 
 #change IMU values to floats
 for c in ['InlineAcc', 'LateralAcc', 'VerticalAcc']:
-    df[c] = pd.to_numeric(df[c], errors='coerce') #
+    df[c] = pd.to_numeric(df[c], errors='coerce')
 
 # clean noisy data by taking a rolling average
 if APPLY_SMOOTHING:
-    for c in ['InlineAcc','LateralAcc','VerticalAcc']:
+    for c in ['InlineAcc', 'LateralAcc', 'VerticalAcc']:
         df[c] = df[c].rolling(5, center=True, min_periods=1).mean()
-else:
-    for c in ['InlineAcc','LateralAcc','VerticalAcc']:
-        df[c] = df[c]
+
 
 #find peaks and troughs of the acc
 def find_peak_trough(acc):
@@ -59,19 +63,23 @@ def find_peak_trough(acc):
     min_idx = np.where(is_min)[0] + 1
     return np.sort(np.concatenate([max_idx, min_idx])), max_idx, min_idx
 
+
 #compute stats
 def cycle_stats_from_signal(acc):
     acc = np.asarray(acc)
     if acc.size == 0: 
-        return {'mean': np.nan,
-                 'total_cycles':0, 
-                 'avg_amplitude':np.nan, 
-                 'rms': np.nan, 
-                 'pos_rms': 0.0,
-                 'neg_rms': 0.0,
-                 'band_counts': {band: 0 for band in AMPLITUDE_BANDS}}
+        return {
+            'mean'       : np.nan,
+            'total_cycles': 0, 
+            'avg_amplitude': np.nan, 
+            'rms'        : np.nan, 
+            'pos_rms'    : 0.0,
+            'neg_rms'    : 0.0,
+            'band_counts': {band: 0 for band in AMPLITUDE_BANDS}
+        }
+
     mean_acc = np.mean(acc)
-    rms = np.sqrt(np.mean(acc**2))
+    rms      = np.sqrt(np.mean(acc**2))
     positive_values = acc[acc > 0]
     negative_values = acc[acc < 0]
 
@@ -86,20 +94,41 @@ def cycle_stats_from_signal(acc):
         neg_rms = 0.0
     
     peak_trough_idx, max_idx, min_idx = find_peak_trough(acc)
+
     # number of cycles roughly equal number of peak-trough pairs
     # produce alternating peaks and troughs, then amplitude = abs(diff between consecutive extrema)
     if peak_trough_idx.size < 2:
-        return {'mean': mean_acc, 'total_cycles':0, 'avg_amplitude':0.0, 'rms': rms, 'pos_rms': pos_rms, 'neg_rms': neg_rms, 'band_counts': {band: 0 for band in AMPLITUDE_BANDS}}
-    ext_vals = acc[peak_trough_idx]
+        return {
+            'mean'        : mean_acc,
+            'total_cycles': 0,
+            'avg_amplitude': 0.0,
+            'rms'         : rms,
+            'pos_rms'     : pos_rms,
+            'neg_rms'     : neg_rms,
+            'band_counts' : {band: 0 for band in AMPLITUDE_BANDS}
+        }
+
+    ext_vals   = acc[peak_trough_idx]
     amplitudes = np.diff(ext_vals)  # keep sign of amplitude changes
     total_cycles = amplitudes.size
-    avg_amp = np.mean(np.abs(amplitudes)) if total_cycles > 0 else 0.0
+    avg_amp   = np.mean(np.abs(amplitudes)) if total_cycles > 0 else 0.0
+
     # Count cycles in each amplitude band
     band_counts = {}
     for band in AMPLITUDE_BANDS:
         band_counts[f'+>={band}g'] = np.sum(amplitudes >= band)
         band_counts[f'-<={-band}g'] = np.sum(amplitudes <= -band)
-    return {'mean': mean_acc, 'total_cycles': total_cycles, 'avg_amplitude': avg_amp, 'rms': rms, 'pos_rms': pos_rms, 'neg_rms': neg_rms, 'band_counts': band_counts}
+
+    return {
+        'mean'        : mean_acc,
+        'total_cycles': total_cycles,
+        'avg_amplitude': avg_amp,
+        'rms'         : rms,
+        'pos_rms'     : pos_rms,
+        'neg_rms'     : neg_rms,
+        'band_counts' : band_counts
+    }
+
 
 #OUTPUT
 
@@ -108,24 +137,26 @@ df['Mag'] = np.sqrt(df['InlineAcc']**2 + df['LateralAcc']**2 + df['VerticalAcc']
 
 #display stats 
 results = []
-for axis in ['InlineAcc','LateralAcc','VerticalAcc','Mag']:
+
+for axis in ['InlineAcc', 'LateralAcc', 'VerticalAcc', 'Mag']:
     stats = cycle_stats_from_signal(df[axis].dropna().values)
-    result = {'Signal': axis, 
-            #   'Mean_g': f"{stats['mean']:.1f}", 
-              'Total_cycles': stats['total_cycles'], 
-            #   'Avg_amp_g': f"{stats['avg_amplitude']:.1f}", 
-            #   'RMS_g': f"{stats['rms']:.1f}",
-              'RMS_Pos_g': f"{stats['pos_rms']:.1f}",
-              'RMS_Neg_g': f"{stats['neg_rms']:.1f}"}
+    result = {
+        'Signal'       : axis, 
+        # 'Mean_g'     : f"{stats['mean']:.1f}", 
+        'Total_cycles' : stats['total_cycles'], 
+        # 'Avg_amp_g'  : f"{stats['avg_amplitude']:.1f}", 
+        # 'RMS_g'      : f"{stats['rms']:.1f}",
+        'RMS_Pos_g'    : f"{stats['pos_rms']:.1f}",
+        'RMS_Neg_g'    : f"{stats['neg_rms']:.1f}"
+    }
     for band in AMPLITUDE_BANDS:
         result[f'Cycles_>={band}g_pos'] = stats['band_counts'][f'+>={band}g']
         result[f'Cycles_<={-band}g_neg'] = stats['band_counts'][f'-<={-band}g']
     results.append(result)
 
+
 #visualise acceleration
-
 if VISUALISE:
-
     for axis in ['InlineAcc', 'LateralAcc', 'VerticalAcc']:
         stats = cycle_stats_from_signal(df[axis].dropna().values)
         plt.figure()
@@ -135,6 +166,7 @@ if VISUALISE:
         plt.title(f'{axis}')
         plt.legend()
         plt.savefig(OUTPUT_DIR / f"{axis}.png", dpi=300)
+
 
 #convert to dicts to dataframe for pandas functionallity 
 df_results = pd.DataFrame(results)
