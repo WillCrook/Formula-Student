@@ -9,17 +9,28 @@ import matplotlib.pyplot as plt
 #Enter File below to analyse
 file_name = "FSPT24_Endurance_IVAN_JESSIE_2024 Car_Generic testing_a_2797.csv" 
 #visualise the acceleration 
-VISUALISE = False
+VISUALISE = True
 #amplitude bands for cycle counting
-AMPLITUDE_BANDS = [0.1, 0.2, 0.3, 0.4, 0.5]  # in g
+AMPLITUDE_BANDS = [0.1, 0.2, 0.3, 0.4, 0.5, 1.0]  # in g
 #toggle smoothing of IMU data (works by taking a rolling average)
 APPLY_SMOOTHING = False
 #optionally output results to a CSV file
 OUPUT_CSV = True
 
+
 #file handling
 BASE_DIR = Path(__file__).parent
-data_file = BASE_DIR.parent / "data" / file_name
+DATA_DIR = BASE_DIR.parent / "data"
+if not DATA_DIR.exists():
+    print("Data folder not found. Creating one now at:", DATA_DIR)
+    DATA_DIR.mkdir(exist_ok=True)
+    print("Please add your data files to this folder and rerun the script.")
+    exit()
+data_file = DATA_DIR / file_name
+
+# Ensure output directory exists
+OUTPUT_DIR = Path(__file__).parent / "output"
+OUTPUT_DIR.mkdir(exist_ok=True)
 
 #load IMU data from after the metadata
 df = pd.read_csv(data_file, skiprows=14)
@@ -119,15 +130,11 @@ if VISUALISE:
         stats = cycle_stats_from_signal(df[axis].dropna().values)
         plt.figure()
         plt.plot(df[axis], label=f'{axis} signal')
-        plt.axhline(stats['mean'], color='black', linestyle='--', label='Mean')
-        plt.axhline(stats['mean'] + stats['avg_amplitude'], color='red', linestyle=':', label='+ Avg Amplitude')
-        plt.axhline(stats['mean'] - stats['avg_amplitude'], color='blue', linestyle=':', label='- Avg Amplitude')
-        plt.axhline(stats['rms'], color='#FF8C00', linestyle=':', label='Root Mean Square')
-        plt.axhline(stats['pos_rms'], color='green', linestyle=':', label='+ RMS')
-        plt.axhline(-stats['neg_rms'], color='purple', linestyle=':', label='- RMS')
+        plt.axhline(stats['pos_rms'], color='lightgreen', linestyle=':', label='+ RMS')
+        plt.axhline(-stats['neg_rms'], color='red', linestyle=':', label='- RMS')
         plt.title(f'{axis}')
         plt.legend()
-        plt.show()
+        plt.savefig(OUTPUT_DIR / f"{axis}.png", dpi=300)
 
 #convert to dicts to dataframe for pandas functionallity 
 df_results = pd.DataFrame(results)
@@ -135,4 +142,4 @@ print(df_results)
 
 #optionally output to a csv file
 if OUPUT_CSV:
-    df_results.to_csv("results.csv", index=False)
+    df_results.to_csv(OUTPUT_DIR / "results.csv", index=False)

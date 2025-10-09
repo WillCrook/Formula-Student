@@ -1,5 +1,0 @@
-Signal,Mean_g,Total_cycles,Avg_amp_g,RMS_g,RMS_Pos_g,RMS_Neg_g,Cycles_>=0.1g_pos,Cycles_<=-0.1g_neg,Cycles_>=0.2g_pos,Cycles_<=-0.2g_neg,Cycles_>=0.3g_pos,Cycles_<=-0.3g_neg,Cycles_>=0.4g_pos,Cycles_<=-0.4g_neg,Cycles_>=0.5g_pos,Cycles_<=-0.5g_neg
-InlineAcc,0.1,4534,0.3,0.8,0.8,0.7,1091,1127,711,745,513,543,399,413,312,335
-LateralAcc,0.1,4305,0.1,0.3,0.3,0.2,447,498,310,294,215,197,153,147,103,105
-VerticalAcc,-1,7121,0.1,1,0,1,1457,1422,443,449,112,131,24,27,8,9
-Mag,1.3,6566,0.2,1.3,1.3,0,1696,1621,910,884,509,504,276,309,155,174
