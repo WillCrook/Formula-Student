@@ -165,6 +165,7 @@ if VISUALISE:
         plt.axhline(-stats['neg_rms'], color='red', linestyle=':', label='- RMS')
         plt.title(f'{axis}')
         plt.legend()
+        plt.show()
         plt.savefig(OUTPUT_DIR / f"{axis}.png", dpi=300)
 
 
