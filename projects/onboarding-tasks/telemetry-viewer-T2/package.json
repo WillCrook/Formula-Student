@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "jsdom": "^30.1.3"
+  },
+  "name": "tbre-telemetry-viewer",
+  "private": true,
+  "scripts": {
+    "test:ui": "node tests/workbench-ui.test.cjs",
+    "check:js": "node --check static/workbench.js",
+    "test:plots": "node tests/plotly-render.test.cjs"
+  }
+}

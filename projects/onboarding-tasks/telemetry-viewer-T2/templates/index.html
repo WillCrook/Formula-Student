@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TBRe · Telemetry workbench</title>
+<link rel="stylesheet" href="/static/workbench.css">
+<script defer src="/static/vendor/plotly-4.1.1.min.js"></script>
+<script defer src="/static/workbench.js"></script>
+</head>
+<body>
+<header class="topbar">
+<button id="toggle-sidebar" class="icon-button mobile-only" aria-label="Toggle lap controls">☰</button>
+<a class="brand" href="/"><span>Telemetry<span class="brand-sub">Will Crook</span></span></a>
+<div class="top-track"><label class="sr-only" for="track-select">Active track</label><select id="track-select"></select></div>
+<div class="top-actions">
+<select id="saved-views" aria-label="Saved comparisons"><option value="">Saved views</option></select>
+<button id="save-view" class="quiet">Save view</button>
+<button id="open-import" class="primary">＋ Import data</button>
+</div>
+</header>
+<div id="toast" role="status" aria-live="polite"></div>
+<div class="app-shell">
+<aside id="sidebar" class="sidebar">
+<div class="sidebar-heading"><h2>Laps</h2><button id="select-all" class="text-button">All</button><button id="select-fastest" class="text-button">Fastest two</button></div>
+<label class="field-label" for="reference-select">Reference lap</label><select id="reference-select"></select>
+<div id="lap-list" class="lap-list"></div>
+<div class="divider"></div>
+<div class="sidebar-heading"><h2>Track sections</h2><button id="edit-track" class="text-button">Edit</button></div>
+<select id="section-select" aria-label="Corner or sector"><option value="full">Whole lap</option></select>
+<div class="range-fields"><label>From · m<input id="range-start" type="number" step=".1" min="0"></label><label>To · m<input id="range-end" type="number" step=".1" min="0"></label></div>
+<div class="range-actions"><button id="apply-range" class="quiet">Zoom to range</button><button id="full-lap" class="text-button">Reset</button></div>
+<label class="field-label" for="context-select">Corner context</label><select id="context-select"><option value="0">No extra distance</option><option value="10" selected>10 m approach / exit</option><option value="25">25 m approach / exit</option></select>
+<div class="sidebar-footer"><span class="status-dot"></span> Local workspace <span id="run-count"></span></div>
+</aside>
+<main>
+<section class="workspace-heading"><div><h1 id="selection-title">Whole lap</h1></div><div class="export-control"><select id="export-format" aria-label="Export format"><option value="csv">Data · CSV</option><option value="pdf">Comparison · PDF</option><option value="json">Session snapshot · JSON</option><option value="png">Plots · PNG</option></select><button id="export" class="quiet">Export ↓</button></div></section>
+<section id="summary-cards" class="summary-cards"></section>
+<div class="work-grid">
+<section class="card telemetry-card">
+<div class="card-heading"><div><h2>Lap comparison</h2><span class="hint">Drag to zoom · double-click to reset</span></div><div class="segmented" id="axis-mode"><button data-domain="distance" class="active">Distance</button><button data-domain="time">Time</button></div></div>
+<div class="plot-toolbar"><div id="channel-controls" class="channel-controls"></div><label class="switch-label"><input id="local-delta" type="checkbox">Reset gap at entry</label></div>
+<div id="telemetry-plot" class="telemetry-plot" aria-label="Interactive shared-axis telemetry"></div>
+<div id="plot-empty" class="empty hidden">Choose at least one channel.</div>
+</section>
+<div class="inspector">
+<section class="card map-card"><div class="card-heading"><div><h2>Track</h2><span id="cursor-readout" class="hint">Click a turn to inspect it</span></div><select id="map-color" aria-label="Track colouring"><option value="laps">Lap paths</option><option value="gain">Local gain / loss</option><option value="speed">Speed</option></select></div><div id="map-plot" class="map-plot"></div><div class="map-footer"><span id="corner-count" class="badge">Turn suggestions</span><span id="selection-span" class="hint"></span></div></section>
+<section class="card analysis-card"><div class="tabs" role="tablist"><button class="active" data-tab="section">Section</button><button data-tab="consistency">Consistency</button><button data-tab="energy">Energy</button><button data-tab="gg">G–G</button></div>
+<div class="tab-content" id="tab-section"><div id="section-metrics"></div></div>
+<div class="tab-content hidden" id="tab-consistency"><div id="consistency-summary"></div><div id="consistency-table"></div><div id="consistency-plot" class="small-plot"></div></div>
+<div class="tab-content hidden" id="tab-energy"><div id="energy-summary"></div><div id="energy-plot" class="small-plot"></div><div id="energy-table"></div></div>
+<div class="tab-content hidden" id="tab-gg"><div class="inline-control"><span class="badge">GPS estimate</span><label>Colour <select id="gg-color"><option value="speed">Speed</option><option value="corner">Corner</option></select></label></div><div id="gg-plot" class="small-plot"></div><div id="gg-empty" class="empty hidden">No acceleration estimates in this selection.</div></div>
+</section>
+</div>
+</div>
+</main>
+</div>
+
+<dialog id="import-dialog" class="large-dialog">
+<div class="dialog-header"><div><p class="eyebrow">ADD A RUN</p><h2>Import telemetry</h2></div><button class="icon-button" data-close="import-dialog" aria-label="Close import">✕</button></div>
+<form id="upload-form" class="upload-bar"><label class="file-drop">Choose data files<input id="import-files" type="file" name="files" accept=".csv,.tsv,.mat,.gpx" multiple required><span>CSV · TSV · MAT · GPX</span></label><button class="primary" type="submit">Read files</button></form>
+<div id="import-error" class="inline-error hidden" role="alert"></div>
+<div id="import-mapping" class="hidden">
+<details class="source-preview"><summary id="source-preview-title">Source columns</summary><div id="source-preview-table"></div></details>
+<div class="import-grid"><div class="mapping-panel">
+<div class="two-fields"><label>Run name<input id="import-name" maxlength="60" value="Imported run"></label><label>Track<select id="import-track"><option value="">New track</option></select></label></div>
+<label id="new-track-name-label">Track name<input id="import-track-name" maxlength="60" value="Imported track"></label>
+<div class="form-section-heading"><h3>Position</h3><select id="coordinate-mode"><option value="gps">Latitude / longitude</option><option value="xy">Planar X / Y</option></select></div>
+<div class="two-fields"><label>Timestamp<select id="map-time" class="column-select"></select></label><label>Time format<select id="map-time-unit"><option value="s">Seconds</option><option value="ms">Milliseconds</option><option value="iso">ISO 8601 + timezone</option></select></label></div>
+<div id="gps-fields" class="two-fields"><label>Latitude<select id="map-latitude" class="column-select"></select></label><label>Longitude<select id="map-longitude" class="column-select"></select></label></div>
+<div id="xy-fields" class="two-fields hidden"><label>X<select id="map-x" class="column-select"></select></label><label>Y<select id="map-y" class="column-select"></select></label></div>
+<label id="xy-unit-label" class="hidden">Coordinate units<select id="map-xy-unit"><option value="m">Metres</option><option value="mm">Millimetres</option></select></label>
+<div class="form-section-heading"><h3>Other channels</h3><button type="button" id="add-channel" class="text-button">＋ Add channel</button></div>
+<div id="import-channel-rows"></div>
+<datalist id="units"><option value="%"><option value="fraction"><option value="kW"><option value="W"><option value="unknown"><option value="m"><option value="bar"><option value="rpm"></datalist>
+</div>
+<div class="preview-panel"><div class="card-heading"><h3>Finish gate</h3><span id="import-count" class="badge">Preview position first</span></div><div id="import-map" class="import-map"></div><div id="gate-controls" class="gate-controls"><span class="hint">Click the path to place the finish.</span><div class="three-fields"><label>Width · m<input id="gate-width" type="number" min="2" max="100" value="20"></label><label>Rotate · °<input id="gate-angle" type="number" min="-90" max="90" value="0"></label><label class="checkbox-field"><input id="gate-flip" type="checkbox">Reverse</label></div></div><div id="import-status" class="hint"></div></div></div>
+<div class="dialog-actions"><span class="hint">Assumptions are recorded in the report.</span><button id="preview-import" type="button" class="quiet">Preview laps</button><button id="commit-import" type="button" class="primary" disabled>Add run</button></div>
+</div></dialog>
+
+<dialog id="track-dialog" class="large-dialog">
+<div class="dialog-header"><div><p class="eyebrow">TRACK DEFINITION</p><h2>Edit turns &amp; sectors</h2></div><button class="icon-button" data-close="track-dialog" aria-label="Close track editor">✕</button></div>
+<div id="track-error" class="inline-error hidden" role="alert"></div>
+<div class="edit-toolbar"><div class="segmented" id="editor-tabs"><button data-editor="corners" class="active">Turn suggestions</button><button data-editor="sectors">Timing sectors</button></div><span class="hint">Ranges are % of the fixed reference path.</span></div>
+<div class="edit-actions"><button id="add-interval" class="quiet">＋ Add</button><button id="merge-intervals" class="quiet">Merge selected</button><button id="split-interval" class="quiet">Split selected</button><button id="corners-to-sectors" class="quiet">Use turns as sectors</button><button id="confirm-corners" class="text-button">Confirm all turns</button></div>
+<div class="editor-scroll"><table id="interval-table"><thead><tr><th></th><th>Name</th><th>From %</th><th>To %</th><th>Confirmed</th><th></th></tr></thead><tbody></tbody></table></div>
+<div class="dialog-actions"><span class="hint">Sectors must cover 0–100% without gaps.</span><button id="save-track" class="primary">Save track</button></div>
+</dialog>
+
+<dialog id="save-dialog" class="small-dialog"><div class="dialog-header"><h2>Save comparison</h2><button class="icon-button" data-close="save-dialog" aria-label="Close save dialog">✕</button></div><form id="save-form"><label>Name<input id="view-name" maxlength="60" required placeholder="Opening turns · L11 vs L12"></label><div class="dialog-actions"><button class="primary" type="submit">Save view</button></div></form></dialog>
+</body></html>

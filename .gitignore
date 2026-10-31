@@ -210,3 +210,7 @@ __marimo__/
 data/
 .csv
 output/
+.DS_Store
+# Keep project-local engineering data and generated artifacts out of Git.
+/projects/*/data/
+/projects/*/output/
